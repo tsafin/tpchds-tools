@@ -55,6 +55,12 @@
 #include "parallel.h"
 
 struct W_WEB_SALES_TBL g_w_web_sales;
+
+#ifdef EMBEDDED_DSDGEN
+void (*g_w_web_sales_callback)(const struct W_WEB_SALES_TBL *row, void *ctx) = NULL;
+void *g_w_web_sales_callback_ctx = NULL;
+#endif /* EMBEDDED_DSDGEN */
+
 ds_key_t skipDays(int nTable, ds_key_t *pRemainder);
 
 static ds_key_t kNewDateIndex = 0;
@@ -192,14 +198,24 @@ mk_detail (void *row, int bPrint)
       genrand_integer(&nTemp, DIST_UNIFORM, 0, 99, 0, WR_IS_RETURNED);
       if (nTemp < WR_RETURN_PCT)
       {
+#ifdef EMBEDDED_DSDGEN
+         mk_w_web_returns(&w_web_returns, g_w_web_sales_callback ? 0 : 1);
+         if (!g_w_web_sales_callback && bPrint)
+#else
          mk_w_web_returns(&w_web_returns, 1);
          if (bPrint)
+#endif /* EMBEDDED_DSDGEN */
 			 pr_w_web_returns(&w_web_returns);
       }
 
       /**
       * now we print out the order and lineitem together as a single row
       */
+#ifdef EMBEDDED_DSDGEN
+      if (g_w_web_sales_callback)
+         g_w_web_sales_callback(r, g_w_web_sales_callback_ctx);
+      else
+#endif /* EMBEDDED_DSDGEN */
       if (bPrint)
 		  pr_w_web_sales(NULL);
 
