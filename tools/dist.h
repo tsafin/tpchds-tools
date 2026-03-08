@@ -36,6 +36,8 @@
 #ifndef R_DIST_H
 #define R_DIST_H
 
+#include "decimal.h"
+
 #define D_NAME_LEN	20
 
 typedef struct DIST_T {
@@ -46,6 +48,12 @@ typedef struct DIST_T {
 	char *strings;
 	char *names;
 	int	size;
+	/* Pre-parsed binary caches: eliminates per-row atoi/strtodec overhead.
+	 * int_cache[vset][row]  for TKN_INT value sets (NULL for other types).
+	 * dec_cache[vset][row]  for TKN_DECIMAL value sets (NULL for other types).
+	 * Populated in load_dist() immediately after strings are read. */
+	int **int_cache;
+	decimal_t **dec_cache;
 	} dist_t;
 
 typedef struct D_IDX_T {
