@@ -71,6 +71,14 @@ typedef struct DS_LIMITS_T
 	char *szDiscount;
 	char *szWholesale;
 	char *szCoupon;
+	/* Pre-parsed binary cache: populated once on first use, eliminating
+	 * per-row strtodec/atoi calls when nTabId alternates between tables. */
+	int parsed;
+	int nQuantityMaxCached;
+	decimal_t dDiscountMax;
+	decimal_t dMarkupMax;
+	decimal_t dWholesaleMax;
+	decimal_t dCouponMax;
 } ds_limits_t;
 
 void set_pricing(int nTabId, ds_pricing_t *pPricing);

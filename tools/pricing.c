@@ -122,11 +122,23 @@ void set_pricing(int nTabId, ds_pricing_t *pPricing)
 		}
 		if (nLastId == -1)
 			INTERNAL("No pricing limits defined");
-		nQuantityMax = atoi(aPriceLimits[nLastId].szQuantity);
-		strtodec(&dDiscountMax, aPriceLimits[nLastId].szDiscount);
-		strtodec(&dMarkupMax, aPriceLimits[nLastId].szMarkUp);
-		strtodec(&dWholesaleMax, aPriceLimits[nLastId].szWholesale);
-		strtodec(&dCouponMax, aPriceLimits[nLastId].szCoupon);
+		/* Parse strings only once per table ID; subsequent alternations
+		 * (e.g. SS_PRICING <-> SR_PRICING per store_returns row) reuse
+		 * the cached decimal_t values, eliminating 4 strtodec + 1 atoi
+		 * calls that were firing on every row. */
+		if (!aPriceLimits[nLastId].parsed) {
+			aPriceLimits[nLastId].nQuantityMaxCached = atoi(aPriceLimits[nLastId].szQuantity);
+			strtodec(&aPriceLimits[nLastId].dDiscountMax,  aPriceLimits[nLastId].szDiscount);
+			strtodec(&aPriceLimits[nLastId].dMarkupMax,    aPriceLimits[nLastId].szMarkUp);
+			strtodec(&aPriceLimits[nLastId].dWholesaleMax, aPriceLimits[nLastId].szWholesale);
+			strtodec(&aPriceLimits[nLastId].dCouponMax,    aPriceLimits[nLastId].szCoupon);
+			aPriceLimits[nLastId].parsed = 1;
+		}
+		nQuantityMax = aPriceLimits[nLastId].nQuantityMaxCached;
+		dDiscountMax  = aPriceLimits[nLastId].dDiscountMax;
+		dMarkupMax    = aPriceLimits[nLastId].dMarkupMax;
+		dWholesaleMax = aPriceLimits[nLastId].dWholesaleMax;
+		dCouponMax    = aPriceLimits[nLastId].dCouponMax;
 	}
 
 	switch(nTabId)
