@@ -323,10 +323,33 @@ decimal_t_op(decimal_t *dest, int op, decimal_t *d1, decimal_t *d2)
 			dest->number = d1->number - d2->number;
 			break;
 		case OP_MULT:
-			res = d1->precision + d2->precision;
+			res = d1->precision + d2->precision - dest->precision;
 			dest->number = d1->number * d2->number;
-			while (res-- > dest->precision)
-				dest->number /= 10;
+			/* Divide by 10^res.  Use compile-time constants so the compiler
+			 * can replace each division with a multiply-by-reciprocal sequence
+			 * (~3 instructions) instead of a slow idivq (~30 cycles). */
+			switch (res) {
+			case 0:  break;
+			case 1:  dest->number /= 10LL; break;
+			case 2:  dest->number /= 100LL; break;
+			case 3:  dest->number /= 1000LL; break;
+			case 4:  dest->number /= 10000LL; break;
+			case 5:  dest->number /= 100000LL; break;
+			case 6:  dest->number /= 1000000LL; break;
+			case 7:  dest->number /= 10000000LL; break;
+			case 8:  dest->number /= 100000000LL; break;
+			default: {
+				static const ds_key_t pow10[] = {
+					1LL, 10LL, 100LL, 1000LL, 10000LL, 100000LL,
+					1000000LL, 10000000LL, 100000000LL, 1000000000LL,
+					10000000000LL, 100000000000LL, 1000000000000LL,
+					10000000000000LL, 100000000000000LL, 1000000000000000LL,
+					10000000000000000LL, 100000000000000000LL, 1000000000000000000LL
+				};
+				if (res > 0 && res < 19) dest->number /= pow10[res];
+				break;
+			}
+			}
 			break;
 		case OP_DIV:
 			f1 = (float)d1->number;
